@@ -83,7 +83,7 @@ st.plotly_chart(fig, use_container_width=True, config = {'displayModeBar': False
 
 st.sidebar.title("Statistics")
 st.sidebar.text("Attacks: "+str(len(data)) +
-                "\nCountries: "+str(len(data["COUNTRY"].unique()))+"\nPerpetrators: "+str(len(data["PERPETRATOR"].unique()))+"\nDeaths: "+str(data["DEAD"].sum())+"\nInjuries: "+str(data["INJURED"].sum()))
+                "\nCountries: "+str(len(data["COUNTRY"].unique()))+"\nPerpetrators: "+str(len(data["PERPETRATOR"].unique()))+"\nDeaths: "+str(int(data["DEAD"].sum()))+"\nInjuries: "+str(int(data["INJURED"].sum())))
 if st.sidebar.button("RERUN"):
     st.experimental_rerun()
 st.text(data)
