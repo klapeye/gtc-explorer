@@ -1,0 +1,89 @@
+import streamlit as st
+import pandas as pd
+import numpy as np
+from streamlit_folium import folium_static
+import folium
+from folium.plugins import FastMarkerCluster, Fullscreen
+from datetime import datetime
+from plotly import graph_objs as go
+
+col1, col2 = st.sidebar.columns([40,60])
+col1.image("logo.png",width=100)
+st.image("dataset-cover.png")
+col2.title("KŁAPEYE FOUNDATION")
+col2.text("GTC Explorer v0.1")
+col3, col4 = st.sidebar.columns(2)
+data = pd.read_csv("klapeye-global-terrorism.csv")
+data['DATE'] = pd.to_datetime(data['DATE'])
+fromdate = col3.date_input(
+    "FROM", value=(pd.Timestamp(min(data['DATE'])).date()), min_value=(pd.Timestamp(min(data['DATE'])).date()), max_value=(pd.Timestamp(max(data['DATE'])).date()))
+todate = col4.date_input(
+    "TO", value=(pd.Timestamp(max(data['DATE'])).date()), min_value=(pd.Timestamp(min(data['DATE'])).date()), max_value=(pd.Timestamp(max(data['DATE'])).date()))
+countries = list(data["COUNTRY"].sort_values().unique())
+countries.insert(0, "*")
+country = st.sidebar.multiselect("COUNTRY", countries, default="*")
+perpetrators = list(data["PERPETRATOR"].sort_values().unique())
+perpetrators.insert(0, "*")
+perpetrator = st.sidebar.multiselect("PERPETRATOR", perpetrators, default="*")
+
+mask = (data['DATE'] > np.datetime64(fromdate)) & (
+    data['DATE'] <= np.datetime64(todate))
+data = data.loc[mask]
+
+if "*" not in country:
+    mask = data["COUNTRY"].isin(country)
+    data = data[mask]
+
+if "*" not in perpetrator:
+    mask = data["PERPETRATOR"].isin(perpetrator)
+    data = data[mask]
+
+lat = []
+lon = []
+for coord in list(data['COORDINATES'].values):
+    try:
+        lat.append(coord.split(",")[0])
+        lon.append(coord.split(",")[1])
+    except:
+        continue
+callback = """\
+function (row) {
+    var marker;
+    marker = L.circle(new L.LatLng(row[0], row[1]), {color:'red'});
+    return marker;
+};
+"""
+folium_map = folium.Map(tiles='cartodbpositron')
+FastMarkerCluster(data=list(zip(lat, lon)),
+                  callback=callback).add_to(folium_map)
+Fullscreen().add_to(folium_map)
+folium_static(folium_map)
+col4, col3 = st.columns([20,80])
+
+freq = col4.radio("Frequency",('DEAD', 'INJURED'))
+dist= col4.radio("Distribution",('ATTACK TYPE', 'PERPETRATOR', 'COUNTRY'))
+
+fig = go.Figure(data=[go.Pie(labels=list(data[freq].groupby(data[dist]).sum().sort_values().nlargest(5).index),
+                            values=list(data[freq].groupby(
+                                data[dist]).sum().sort_values().nlargest(5)))]
+                                )
+
+fig.update_traces(hoverinfo='label+percent', textinfo='value', textfont_size=20,
+                  marker=dict(line=dict(color='#000000', width=2)))
+col3.plotly_chart(fig, use_container_width=True, config = {'displayModeBar': False}
+)
+
+fig = go.Figure()
+fig.add_trace(go.Scatter(x=data['DATE'], y=data['DEAD'].groupby(data['DATE']).sum()))
+st.plotly_chart(fig, use_container_width=True, config = {'displayModeBar': False})
+
+fig = go.Figure()
+fig.add_trace(go.Scatter(x=data['DATE'], y=data['INJURED'].groupby(data['DATE']).sum()))
+st.plotly_chart(fig, use_container_width=True, config = {'displayModeBar': False})
+
+st.sidebar.title("Statistics")
+st.sidebar.text("Attacks: "+str(len(data)) +
+                "\nCountries: "+str(len(data["COUNTRY"].unique()))+"\nPerpetrators: "+str(len(data["PERPETRATOR"].unique()))+"\nDeaths: "+str(data["DEAD"].sum())+"\nInjuries: "+str(data["INJURED"].sum()))
+if st.sidebar.button("RERUN"):
+    st.experimental_rerun()
+st.text(data)

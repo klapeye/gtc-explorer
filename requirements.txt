@@ -1,0 +1,7 @@
+streamlit
+pandas
+numpy
+streamlit_folium
+folium
+datetime
+plotly
