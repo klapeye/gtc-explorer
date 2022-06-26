@@ -11,18 +11,25 @@ col1, col2 = st.sidebar.columns([40,60])
 col1.image("logo.png",width=100)
 st.image("dataset-cover.png")
 col2.title("KŁAPEYE FOUNDATION")
-col2.text("GTC Explorer v0.1")
+col2.text("GTC Explorer v0.2")
 col3, col4 = st.sidebar.columns(2)
 data = pd.read_csv("klapeye-global-terrorism.csv")
+data.replace(r'\s+', np.nan, regex=True)
 data['DATE'] = pd.to_datetime(data['DATE'])
 fromdate = col3.date_input(
     "FROM", value=(pd.Timestamp(min(data['DATE'])).date()), min_value=(pd.Timestamp(min(data['DATE'])).date()), max_value=(pd.Timestamp(max(data['DATE'])).date()))
 todate = col4.date_input(
     "TO", value=(pd.Timestamp(max(data['DATE'])).date()), min_value=(pd.Timestamp(min(data['DATE'])).date()), max_value=(pd.Timestamp(max(data['DATE'])).date()))
 countries = list(data["COUNTRY"].sort_values().unique())
+countries = [x for x in countries if pd.isnull(x) == False]
 countries.insert(0, "*")
 country = st.sidebar.multiselect("COUNTRY", countries, default="*")
+regions = list(data["REGION"].sort_values().unique())
+regions = [x for x in regions if pd.isnull(x) == False]
+regions.insert(0, "*")
+region = st.sidebar.multiselect("REGION", regions, default="*")
 perpetrators = list(data["PERPETRATOR"].sort_values().unique())
+perpetrators = [x for x in perpetrators if pd.isnull(x) == False]
 perpetrators.insert(0, "*")
 perpetrator = st.sidebar.multiselect("PERPETRATOR", perpetrators, default="*")
 
@@ -32,6 +39,10 @@ data = data.loc[mask]
 
 if "*" not in country:
     mask = data["COUNTRY"].isin(country)
+    data = data[mask]
+
+if "*" not in region:
+    mask = data["REGION"].isin(region)
     data = data[mask]
 
 if "*" not in perpetrator:
@@ -61,7 +72,7 @@ folium_static(folium_map)
 col4, col3 = st.columns([20,80])
 
 freq = col4.radio("Frequency",('DEAD', 'INJURED'))
-dist= col4.radio("Distribution",('ATTACK TYPE', 'PERPETRATOR', 'COUNTRY'))
+dist= col4.radio("Distribution",('ATTACK TYPE', 'PERPETRATOR', 'REGION', 'SUBREGION', 'COUNTRY', 'STATE', 'CITY'))
 
 fig = go.Figure(data=[go.Pie(labels=list(data[freq].groupby(data[dist]).sum().sort_values().nlargest(5).index),
                             values=list(data[freq].groupby(
@@ -83,7 +94,7 @@ st.plotly_chart(fig, use_container_width=True, config = {'displayModeBar': False
 
 st.sidebar.title("Statistics")
 st.sidebar.text("Attacks: "+str(len(data)) +
-                "\nCountries: "+str(len(data["COUNTRY"].unique()))+"\nPerpetrators: "+str(len(data["PERPETRATOR"].unique()))+"\nDeaths: "+str(int(data["DEAD"].sum()))+"\nInjuries: "+str(int(data["INJURED"].sum())))
+                "\nRegions: "+str(len(data["REGION"].unique()))+ "\nCountries: "+str(len(data["COUNTRY"].unique()))+"\nPerpetrators: "+str(len(data["PERPETRATOR"].unique()))+"\nDeaths: "+str(int(data["DEAD"].sum()))+"\nInjuries: "+str(int(data["INJURED"].sum())))
 if st.sidebar.button("RERUN"):
     st.experimental_rerun()
 st.text(data)
