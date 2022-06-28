@@ -7,11 +7,17 @@ from folium.plugins import FastMarkerCluster, Fullscreen
 from datetime import datetime
 from plotly import graph_objs as go
 
+st.set_page_config(
+        page_title="GTC EXPLORER | KŁAPEYE FOUNDATION",
+        page_icon="logo.png",
+        layout="wide",
+)
+
 col1, col2 = st.sidebar.columns([40,60])
 col1.image("logo.png",width=100)
 st.image("dataset-cover.png")
 col2.title("KŁAPEYE FOUNDATION")
-col2.text("GTC Explorer v0.2")
+col2.text("GTC Explorer v0.3")
 col3, col4 = st.sidebar.columns(2)
 data = pd.read_csv("klapeye-global-terrorism.csv")
 data.replace(r'\s+', np.nan, regex=True)
@@ -32,6 +38,10 @@ perpetrators = list(data["PERPETRATOR"].sort_values().unique())
 perpetrators = [x for x in perpetrators if pd.isnull(x) == False]
 perpetrators.insert(0, "*")
 perpetrator = st.sidebar.multiselect("PERPETRATOR", perpetrators, default="*")
+categories = list(data["CATEGORY"].sort_values().unique())
+categories = [x for x in categories if pd.isnull(x) == False]
+categories.insert(0, "*")
+category = st.sidebar.multiselect("CATEGORY", categories, default="*")
 
 mask = (data['DATE'] > np.datetime64(fromdate)) & (
     data['DATE'] <= np.datetime64(todate))
@@ -47,6 +57,10 @@ if "*" not in region:
 
 if "*" not in perpetrator:
     mask = data["PERPETRATOR"].isin(perpetrator)
+    data = data[mask]
+
+if "*" not in category:
+    mask = data["CATEGORY"].isin(category)
     data = data[mask]
 
 lat = []
@@ -72,7 +86,7 @@ folium_static(folium_map)
 col4, col3 = st.columns([20,80])
 
 freq = col4.radio("Frequency",('DEAD', 'INJURED'))
-dist= col4.radio("Distribution",('ATTACK TYPE', 'PERPETRATOR', 'REGION', 'SUBREGION', 'COUNTRY', 'STATE', 'CITY'))
+dist= col4.radio("Distribution",('CATEGORY', 'PERPETRATOR', 'REGION', 'SUBREGION', 'COUNTRY', 'STATE', 'CITY'))
 
 fig = go.Figure(data=[go.Pie(labels=list(data[freq].groupby(data[dist]).sum().sort_values().nlargest(5).index),
                             values=list(data[freq].groupby(
@@ -84,10 +98,12 @@ fig.update_traces(hoverinfo='label+percent', textinfo='value', textfont_size=20,
 col3.plotly_chart(fig, use_container_width=True, config = {'displayModeBar': False}
 )
 
+st.subheader("DEAD")
 fig = go.Figure()
 fig.add_trace(go.Scatter(x=data['DATE'], y=data['DEAD'].groupby(data['DATE']).sum()))
 st.plotly_chart(fig, use_container_width=True, config = {'displayModeBar': False})
 
+st.subheader("INJURED")
 fig = go.Figure()
 fig.add_trace(go.Scatter(x=data['DATE'], y=data['INJURED'].groupby(data['DATE']).sum()))
 st.plotly_chart(fig, use_container_width=True, config = {'displayModeBar': False})
@@ -98,3 +114,18 @@ st.sidebar.text("Attacks: "+str(len(data)) +
 if st.sidebar.button("RERUN"):
     st.experimental_rerun()
 st.text(data)
+
+@st.cache
+def convert_df(df):
+   return df.to_csv().encode('utf-8')
+
+
+csv = convert_df(data)
+
+st.download_button(
+   "DOWNLOAD",
+   csv,
+   "klapeye-global-terrorism.csv",
+   "text/csv",
+   key='download-csv'
+)
