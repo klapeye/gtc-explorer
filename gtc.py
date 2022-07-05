@@ -15,9 +15,9 @@ st.set_page_config(
 
 col1, col2 = st.sidebar.columns([40,60])
 col1.image("logo.png",width=100)
-st.image("dataset-cover.png")
+st.image("dataset-cover.png", width=800)
 col2.title("KŁAPEYE FOUNDATION")
-col2.text("GTC Explorer v0.3")
+col2.text("GTC Explorer v0.4")
 col3, col4 = st.sidebar.columns(2)
 data = pd.read_csv("klapeye-global-terrorism.csv")
 data.replace(r'\s+', np.nan, regex=True)
@@ -82,7 +82,7 @@ folium_map = folium.Map(tiles='cartodbpositron')
 FastMarkerCluster(data=list(zip(lat, lon)),
                   callback=callback).add_to(folium_map)
 Fullscreen().add_to(folium_map)
-folium_static(folium_map)
+folium_static(folium_map, width=800)
 col4, col3 = st.columns([20,80])
 
 freq = col4.radio("Frequency",('DEAD', 'INJURED'))
@@ -95,25 +95,25 @@ fig = go.Figure(data=[go.Pie(labels=list(data[freq].groupby(data[dist]).sum().so
 
 fig.update_traces(hoverinfo='label+percent', textinfo='value', textfont_size=20,
                   marker=dict(line=dict(color='#000000', width=2)))
-col3.plotly_chart(fig, use_container_width=True, config = {'displayModeBar': False}
+col3.plotly_chart(fig, use_container_width=False, config = {'displayModeBar': False}
 )
 
 st.subheader("DEAD")
 fig = go.Figure()
 fig.add_trace(go.Scatter(x=data['DATE'], y=data['DEAD'].groupby(data['DATE']).sum()))
-st.plotly_chart(fig, use_container_width=True, config = {'displayModeBar': False})
+st.plotly_chart(fig, use_container_width=False, config = {'displayModeBar': False})
 
 st.subheader("INJURED")
 fig = go.Figure()
 fig.add_trace(go.Scatter(x=data['DATE'], y=data['INJURED'].groupby(data['DATE']).sum()))
-st.plotly_chart(fig, use_container_width=True, config = {'displayModeBar': False})
+st.plotly_chart(fig, use_container_width=False, config = {'displayModeBar': False})
 
 st.sidebar.title("Statistics")
 st.sidebar.text("Attacks: "+str(len(data)) +
                 "\nRegions: "+str(len(data["REGION"].unique()))+ "\nCountries: "+str(len(data["COUNTRY"].unique()))+"\nPerpetrators: "+str(len(data["PERPETRATOR"].unique()))+"\nDeaths: "+str(int(data["DEAD"].sum()))+"\nInjuries: "+str(int(data["INJURED"].sum())))
 if st.sidebar.button("RERUN"):
     st.experimental_rerun()
-st.text(data)
+st.text(data[["DATE", "COUNTRY", "CITY", "DEAD", "INJURED", "PERPETRATOR", "CATEGORY"]])
 
 @st.cache
 def convert_df(df):
