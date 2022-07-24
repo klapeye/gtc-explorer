@@ -17,13 +17,15 @@ col1, col2 = st.sidebar.columns([40,60])
 col1.image("logo.png",width=100)
 st.image("dataset-cover.png", width=800)
 col2.title("KŁAPEYE FOUNDATION")
-col2.text("GTC Explorer v0.4")
+col2.text("GTC Explorer v0.5")
 col3, col4 = st.sidebar.columns(2)
 data = pd.read_csv("klapeye-global-terrorism.csv")
 data.replace(r'\s+', np.nan, regex=True)
 data['DATE'] = pd.to_datetime(data['DATE'])
+data['DEAD'] = data['DEAD'].astype('Int64')
+data['INJURED'] = data['INJURED'].astype('Int64')
 fromdate = col3.date_input(
-    "FROM", value=(pd.Timestamp(min(data['DATE'])).date()), min_value=(pd.Timestamp(min(data['DATE'])).date()), max_value=(pd.Timestamp(max(data['DATE'])).date()))
+    "FROM", value=(pd.Timestamp("2020-01-01").date()), min_value=(pd.Timestamp(min(data['DATE'])).date()), max_value=(pd.Timestamp(max(data['DATE'])).date()))
 todate = col4.date_input(
     "TO", value=(pd.Timestamp(max(data['DATE'])).date()), min_value=(pd.Timestamp(min(data['DATE'])).date()), max_value=(pd.Timestamp(max(data['DATE'])).date()))
 countries = list(data["COUNTRY"].sort_values().unique())
@@ -113,7 +115,7 @@ st.sidebar.text("Attacks: "+str(len(data)) +
                 "\nRegions: "+str(len(data["REGION"].unique()))+ "\nCountries: "+str(len(data["COUNTRY"].unique()))+"\nPerpetrators: "+str(len(data["PERPETRATOR"].unique()))+"\nDeaths: "+str(int(data["DEAD"].sum()))+"\nInjuries: "+str(int(data["INJURED"].sum())))
 if st.sidebar.button("RERUN"):
     st.experimental_rerun()
-st.text(data[["DATE", "COUNTRY", "CITY", "DEAD", "INJURED", "PERPETRATOR", "CATEGORY"]])
+st.text(data[["DATE", "COUNTRY", "DEAD", "INJURED", "PERPETRATOR"]])
 
 @st.cache
 def convert_df(df):
