@@ -12,20 +12,28 @@ st.set_page_config(
         page_icon="logo.png",
         layout="wide",
 )
+padding = 0
+st.markdown(f""" <style>
+    .reportview-container .main .block-container{{
+        padding-top: {padding}rem;
+        padding-right: {padding}rem;
+        padding-left: {padding}rem;
+        padding-bottom: {padding}rem;
+    }} </style> """, unsafe_allow_html=True)
 
 col1, col2 = st.sidebar.columns([40,60])
 col1.image("logo.png",width=100)
-st.image("dataset-cover.png", width=800)
+st.image("dataset-cover.png", use_column_width=True)
 col2.title("KŁAPEYE FOUNDATION")
-col2.text("GTC Explorer v0.5")
+col2.text("GTC Explorer v0.6")
 col3, col4 = st.sidebar.columns(2)
 data = pd.read_csv("klapeye-global-terrorism.csv")
 data.replace(r'\s+', np.nan, regex=True)
-data['DATE'] = pd.to_datetime(data['DATE'])
+data['DATE'] = pd.to_datetime(data['DATE']).dt.date
 data['DEAD'] = data['DEAD'].astype('Int64')
 data['INJURED'] = data['INJURED'].astype('Int64')
 fromdate = col3.date_input(
-    "FROM", value=(pd.Timestamp("2020-01-01").date()), min_value=(pd.Timestamp(min(data['DATE'])).date()), max_value=(pd.Timestamp(max(data['DATE'])).date()))
+    "FROM", value=(pd.Timestamp("2001-01-01").date()), min_value=(pd.Timestamp(min(data['DATE'])).date()), max_value=(pd.Timestamp(max(data['DATE'])).date()))
 todate = col4.date_input(
     "TO", value=(pd.Timestamp(max(data['DATE'])).date()), min_value=(pd.Timestamp(min(data['DATE'])).date()), max_value=(pd.Timestamp(max(data['DATE'])).date()))
 countries = list(data["COUNTRY"].sort_values().unique())
@@ -80,12 +88,19 @@ function (row) {
     return marker;
 };
 """
+make_map_responsive= """
+ <style>
+ [title~="st.iframe"] { width: 100%}
+ </style>
+"""
+st.markdown(make_map_responsive, unsafe_allow_html=True)
+
 folium_map = folium.Map(tiles='cartodbpositron')
 FastMarkerCluster(data=list(zip(lat, lon)),
                   callback=callback).add_to(folium_map)
 Fullscreen().add_to(folium_map)
 folium_static(folium_map, width=800)
-col4, col3 = st.columns([20,80])
+col4, col3 = st.columns([10,90])
 
 freq = col4.radio("Frequency",('DEAD', 'INJURED'))
 dist= col4.radio("Distribution",('CATEGORY', 'PERPETRATOR', 'REGION', 'SUBREGION', 'COUNTRY', 'STATE', 'CITY'))
@@ -97,25 +112,25 @@ fig = go.Figure(data=[go.Pie(labels=list(data[freq].groupby(data[dist]).sum().so
 
 fig.update_traces(hoverinfo='label+percent', textinfo='value', textfont_size=20,
                   marker=dict(line=dict(color='#000000', width=2)))
-col3.plotly_chart(fig, use_container_width=False, config = {'displayModeBar': False}
+col3.plotly_chart(fig, use_container_width=True, config = {'displayModeBar': False}
 )
 
 st.subheader("DEAD")
 fig = go.Figure()
 fig.add_trace(go.Scatter(x=data['DATE'], y=data['DEAD'].groupby(data['DATE']).sum()))
-st.plotly_chart(fig, use_container_width=False, config = {'displayModeBar': False})
+st.plotly_chart(fig, use_container_width=True, config = {'displayModeBar': False})
 
 st.subheader("INJURED")
 fig = go.Figure()
 fig.add_trace(go.Scatter(x=data['DATE'], y=data['INJURED'].groupby(data['DATE']).sum()))
-st.plotly_chart(fig, use_container_width=False, config = {'displayModeBar': False})
+st.plotly_chart(fig, use_container_width=True, config = {'displayModeBar': False})
 
 st.sidebar.title("Statistics")
 st.sidebar.text("Attacks: "+str(len(data)) +
                 "\nRegions: "+str(len(data["REGION"].unique()))+ "\nCountries: "+str(len(data["COUNTRY"].unique()))+"\nPerpetrators: "+str(len(data["PERPETRATOR"].unique()))+"\nDeaths: "+str(int(data["DEAD"].sum()))+"\nInjuries: "+str(int(data["INJURED"].sum())))
 if st.sidebar.button("RERUN"):
     st.experimental_rerun()
-st.text(data[["DATE", "COUNTRY", "DEAD", "INJURED", "PERPETRATOR"]])
+st.dataframe(data)
 
 @st.cache
 def convert_df(df):
