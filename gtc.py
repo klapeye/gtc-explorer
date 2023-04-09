@@ -100,7 +100,7 @@ FastMarkerCluster(data=list(zip(lat, lon)),
                   callback=callback).add_to(folium_map)
 Fullscreen().add_to(folium_map)
 folium_static(folium_map, width=800)
-col4, col3 = st.columns([10,90])
+col4, col3 = st.columns([20,80])
 
 freq = col4.radio("Frequency",('DEAD', 'INJURED'))
 dist= col4.radio("Distribution",('CATEGORY', 'PERPETRATOR', 'REGION', 'SUBREGION', 'COUNTRY', 'STATE', 'CITY'))
@@ -132,7 +132,7 @@ if st.sidebar.button("RERUN"):
     st.experimental_rerun()
 st.dataframe(data)
 
-@st.cache
+@st.cache_data
 def convert_df(df):
    return df.to_csv().encode('utf-8')
 
